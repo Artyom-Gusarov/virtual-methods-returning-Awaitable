@@ -1,4 +1,4 @@
-2025-10-23T04:22:03+03:00
+2025-10-23T20:38:29+03:00
 Running ./benchmark_new_future
 Run on (12 X 2096 MHz CPU s)
 CPU Caches:
@@ -6,10 +6,10 @@ CPU Caches:
   L1 Instruction 32 KiB (x6)
   L2 Unified 512 KiB (x6)
   L3 Unified 4096 KiB (x1)
-Load Average: 0.58, 0.47, 0.37
+Load Average: 0.96, 0.56, 0.29
 ***WARNING*** Library was built as DEBUG. Timings may be affected.
 -----------------------------------------------------------
 Benchmark                 Time             CPU   Iterations
 -----------------------------------------------------------
-BM_SyncDataUser         267 ns          267 ns      2315610
-BM_AsyncDataUser       1572 ns         1562 ns       633148
+BM_SyncDataUser         270 ns          270 ns      2589175
+BM_AsyncDataUser       1269 ns         1266 ns       831702

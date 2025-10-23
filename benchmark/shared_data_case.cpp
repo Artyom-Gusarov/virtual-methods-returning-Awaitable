@@ -1,10 +1,9 @@
 #include <benchmark/benchmark.h>
 
-#include "new_future_impl.hpp"
 #include "simple_coro.h"
 
 #ifdef TEST_VIRTUAL_AWAITER
-#include "virtual_awaiter_impl.hpp"
+#include "dynamic_awaiter_impl.hpp"
 #elif TEST_NEW_FUTURE
 #include "new_future_impl.hpp"
 #endif

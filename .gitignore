@@ -5,6 +5,10 @@ build_debug/
 build_release/
 build_tsan/
 
+debug_build/
+release_build/
+tsan_build/
+
 # Prerequisites
 *.d
 

@@ -62,3 +62,12 @@ add_custom_target(run-all-benchmarks
     COMMAND benchmark_virtual_awaiter --benchmark_out=${CMAKE_SOURCE_DIR}/benchmark/results/benchmark_virtual_awaiter.txt --benchmark_out_format=console
     COMMAND benchmark_new_future --benchmark_out=${CMAKE_SOURCE_DIR}/benchmark/results/benchmark_new_future.txt --benchmark_out_format=console
 )
+
+add_custom_target(init_all_builds
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/debug_build
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/release_build
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/tsan_build
+    COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_SOURCE_DIR}/debug_build -DCMAKE_BUILD_TYPE=Debug
+    COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_SOURCE_DIR}/release_build -DCMAKE_BUILD_TYPE=Release
+    COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_SOURCE_DIR}/tsan_build -DCMAKE_BUILD_TYPE=TSAN
+)

@@ -1,4 +1,4 @@
-2025-10-22T20:39:36+03:00
+2025-10-23T03:33:13+03:00
 Running ./benchmark_virtual_awaiter
 Run on (12 X 2096 MHz CPU s)
 CPU Caches:
@@ -6,9 +6,10 @@ CPU Caches:
   L1 Instruction 32 KiB (x6)
   L2 Unified 512 KiB (x6)
   L3 Unified 4096 KiB (x1)
-Load Average: 1.00, 0.57, 0.57
+Load Average: 0.60, 0.43, 0.52
 ***WARNING*** Library was built as DEBUG. Timings may be affected.
------------------------------------------------------
-Benchmark           Time             CPU   Iterations
------------------------------------------------------
-BM_Dummy        0.253 ns        0.253 ns   2776191548
+-----------------------------------------------------------
+Benchmark                 Time             CPU   Iterations
+-----------------------------------------------------------
+BM_SyncDataUser         273 ns          273 ns      2531470
+BM_AsyncDataUser      87999 ns        87994 ns         7396

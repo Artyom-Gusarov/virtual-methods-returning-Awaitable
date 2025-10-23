@@ -1,6 +1,10 @@
 build/
 .vscode/
 
+build_debug/
+build_release/
+build_tsan/
+
 # Prerequisites
 *.d
 

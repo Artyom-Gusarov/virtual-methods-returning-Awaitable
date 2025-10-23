@@ -46,10 +46,25 @@ void BM_SyncDataUser(benchmark::State& state) {
 }
 
 void BM_AsyncDataUser(benchmark::State& state) {
+    std::atomic<SharedDataStorage*> storagePtr = nullptr;
+    bool finishFlag = false;
+
+    std::thread setterThread([&storagePtr, &finishFlag]() {
+        while (true) {
+            storagePtr.wait(nullptr);
+            if (finishFlag) {
+                break;
+            }
+            SharedDataStorage* storage = storagePtr.exchange(nullptr);
+            storage->setData(42);
+        }
+    });
+
     for (auto _ : state) {
-        auto future = []() -> simple::Future {
+        auto future = [&storagePtr]() -> simple::Future {
             auto storage = std::make_shared<SharedDataStorage>();
-            std::thread([&storage]() { storage->setData(42); }).detach();
+            storagePtr.store(storage.get());
+            storagePtr.notify_one();
             SharedDataUser user(storage);
             user.transformData([](int value) { return value * 2; });
             int result = co_await user.getData();
@@ -59,6 +74,11 @@ void BM_AsyncDataUser(benchmark::State& state) {
         }();
         future.blockingWait();
     }
+
+    finishFlag = true;
+    storagePtr.store((SharedDataStorage*)1);
+    storagePtr.notify_one();
+    setterThread.join();
 }
 
 BENCHMARK(BM_SyncDataUser);

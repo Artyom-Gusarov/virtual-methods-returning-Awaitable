@@ -15,30 +15,36 @@ class AwaiterBase {
     virtual ~AwaiterBase() = default;
 };
 
-template <typename T>
-concept AwaiterType =
-    requires(T t) {
-        { t.await_ready() } -> std::same_as<bool>;
-        {
-            t.await_suspend(std::declval<std::coroutine_handle<>>())
-            } -> std::same_as<void>;
-        { t.await_resume() } -> std::same_as<int>;
-    };
+namespace internal {
 
-template <AwaiterType Base, size_t MaxSize>
+template <class R>
+concept await_suspend_result = std::same_as<R, void> || std::same_as<R, bool>;
+
+}  // namespace internal
+
+template <class A, class T>
+concept AwaiterType = requires(A a, std::coroutine_handle<> h) {
+                          { a.await_ready() } -> std::same_as<bool>;
+                          { a.await_resume() } -> std::same_as<T>;
+                          {
+                              a.await_suspend(h)
+                              } -> internal::await_suspend_result;
+                      };
+
+template <typename T, size_t MaxSize, AwaiterType<T> Base = AwaiterBase>
 class Awaiter {
   public:
-    template <AwaiterType T>
-        requires(sizeof(T) <= MaxSize && std::is_base_of_v<Base, T>)
-    Awaiter(T&& awaiter) {
-        new (storage_) T(std::forward<T>(awaiter));
+    template <typename A>
+        requires(sizeof(A) <= MaxSize && std::is_base_of_v<Base, A>)
+    Awaiter(A&& awaiter) {
+        new (storage_) A(std::forward<A>(awaiter));
     }
 
-    template <AwaiterType T>
-        requires(sizeof(T) <= MaxSize && std::is_base_of_v<Base, T>)
-    Awaiter& operator=(T&& awaiter) noexcept {
+    template <typename A>
+        requires(sizeof(A) <= MaxSize && std::is_base_of_v<Base, A>)
+    Awaiter& operator=(A&& awaiter) noexcept {
         awaiter_.~Base();
-        new (storage_) T(std::forward<T>(awaiter));
+        new (storage_) A(std::forward<A>(awaiter));
         return *this;
     }
 
@@ -46,11 +52,11 @@ class Awaiter {
         return awaiter_.await_ready();
     }
 
-    void await_suspend(std::coroutine_handle<> handle) {
-        awaiter_.await_suspend(handle);
+    auto await_suspend(std::coroutine_handle<> handle) {
+        return awaiter_.await_suspend(handle);
     }
 
-    int await_resume() {
+    T await_resume() {
         return awaiter_.await_resume();
     }
 

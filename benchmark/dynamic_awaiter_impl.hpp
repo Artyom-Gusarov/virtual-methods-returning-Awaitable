@@ -5,7 +5,7 @@
 
 class SharedDataBase {
   protected:
-    using dAwaiter = dynamic::Awaiter<dynamic::AwaiterBase, 24>;
+    using dAwaiter = dynamic::Awaiter<int, 24>;
 
   public:
     virtual dAwaiter asyncGet() = 0;

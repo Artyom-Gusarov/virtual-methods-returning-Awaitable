@@ -37,12 +37,14 @@ class Awaiter {
     template <typename A>
         requires(sizeof(A) <= MaxSize && std::is_base_of_v<Base, A>)
     Awaiter(A&& awaiter) {
+        static_assert(alignof(A) <= alignof(std::max_align_t));
         new (storage_) A(std::forward<A>(awaiter));
     }
 
     template <typename A>
         requires(sizeof(A) <= MaxSize && std::is_base_of_v<Base, A>)
     Awaiter& operator=(A&& awaiter) noexcept {
+        static_assert(alignof(A) <= alignof(std::max_align_t));
         awaiter_.~Base();
         new (storage_) A(std::forward<A>(awaiter));
         return *this;
@@ -61,7 +63,7 @@ class Awaiter {
     }
 
   private:
-    std::byte storage_[MaxSize];
+    alignas(alignof(std::max_align_t)) std::byte storage_[MaxSize];
     Base& awaiter_ = *reinterpret_cast<Base*>(storage_);
 };
 

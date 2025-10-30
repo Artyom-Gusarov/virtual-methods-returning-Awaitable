@@ -4,17 +4,6 @@
 
 namespace dynamic {
 
-class AwaiterBase {
-  public:
-    virtual bool await_ready() = 0;
-
-    virtual void await_suspend(std::coroutine_handle<> handle) = 0;
-
-    virtual int await_resume() = 0;
-
-    virtual ~AwaiterBase() = default;
-};
-
 namespace internal {
 
 template <class R>
@@ -31,40 +20,63 @@ concept AwaiterType = requires(A a, std::coroutine_handle<> h) {
                               } -> internal::await_suspend_result;
                       };
 
-template <typename T, size_t MaxSize, AwaiterType<T> Base = AwaiterBase>
+template <typename T, size_t MaxSize>
 class Awaiter {
   public:
-    template <typename A>
-        requires(sizeof(A) <= MaxSize && std::is_base_of_v<Base, A>)
+    template <AwaiterType<T> A>
+        requires(sizeof(A) <= MaxSize &&
+                 alignof(A) <= alignof(std::max_align_t))
     Awaiter(A&& awaiter) {
-        static_assert(alignof(A) <= alignof(std::max_align_t));
         new (storage_) A(std::forward<A>(awaiter));
+
+        ready = [](void* storage) -> bool {
+            return static_cast<A*>(storage)->await_ready();
+        };
+        suspend = [](void* storage, std::coroutine_handle<> handle) {
+            static_cast<A*>(storage)->await_suspend(handle);
+        };
+        resume = [](void* storage) -> T {
+            return static_cast<A*>(storage)->await_resume();
+        };
     }
 
-    template <typename A>
-        requires(sizeof(A) <= MaxSize && std::is_base_of_v<Base, A>)
+    template <AwaiterType<T> A>
+        requires(sizeof(A) <= MaxSize &&
+                 alignof(A) <= alignof(std::max_align_t))
     Awaiter& operator=(A&& awaiter) noexcept {
-        static_assert(alignof(A) <= alignof(std::max_align_t));
-        awaiter_.~Base();
+        // TODO destructor call
         new (storage_) A(std::forward<A>(awaiter));
+
+        ready = [](void* storage) -> bool {
+            return static_cast<A*>(storage)->await_ready();
+        };
+        suspend = [](void* storage, std::coroutine_handle<> handle) {
+            static_cast<A*>(storage)->await_suspend(handle);
+        };
+        resume = [](void* storage) -> T {
+            return static_cast<A*>(storage)->await_resume();
+        };
+
         return *this;
     }
 
     bool await_ready() {
-        return awaiter_.await_ready();
+        return ready(storage_);
     }
 
     auto await_suspend(std::coroutine_handle<> handle) {
-        return awaiter_.await_suspend(handle);
+        return suspend(storage_, handle);
     }
 
     T await_resume() {
-        return awaiter_.await_resume();
+        return resume(storage_);
     }
 
   private:
     alignas(alignof(std::max_align_t)) std::byte storage_[MaxSize];
-    Base& awaiter_ = *reinterpret_cast<Base*>(storage_);
+    bool (*ready)(void*);
+    void (*suspend)(void*, std::coroutine_handle<>);  // TODO bool suspend
+    T (*resume)(void*);
 };
 
 }  // namespace dynamic

@@ -37,6 +37,18 @@ class Awaiter {
         return *this;
     }
 
+    bool await_ready() {
+        return ready(storage_);
+    }
+
+    auto await_suspend(std::coroutine_handle<> handle) {
+        return suspend(storage_, handle);
+    }
+
+    T await_resume() {
+        return resume(storage_);
+    }
+
   private:
     template <typename A>
     void assign_functions() {
@@ -51,18 +63,6 @@ class Awaiter {
         };
         resume = [](void* storage) -> T { return static_cast<A*>(storage)->await_resume(); };
         destroy = [](void* storage) { static_cast<A*>(storage)->~A(); };
-    }
-
-    bool await_ready() {
-        return ready(storage_);
-    }
-
-    auto await_suspend(std::coroutine_handle<> handle) {
-        return suspend(storage_, handle);
-    }
-
-    T await_resume() {
-        return resume(storage_);
     }
 
   private:

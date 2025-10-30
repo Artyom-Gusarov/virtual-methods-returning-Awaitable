@@ -28,36 +28,39 @@ class Awaiter {
                  alignof(A) <= alignof(std::max_align_t))
     Awaiter(A&& awaiter) {
         new (storage_) A(std::forward<A>(awaiter));
-
-        ready = [](void* storage) -> bool {
-            return static_cast<A*>(storage)->await_ready();
-        };
-        suspend = [](void* storage, std::coroutine_handle<> handle) {
-            static_cast<A*>(storage)->await_suspend(handle);
-        };
-        resume = [](void* storage) -> T {
-            return static_cast<A*>(storage)->await_resume();
-        };
+        assign_functions<A>();
     }
 
     template <AwaiterType<T> A>
         requires(sizeof(A) <= MaxSize &&
                  alignof(A) <= alignof(std::max_align_t))
     Awaiter& operator=(A&& awaiter) noexcept {
-        // TODO destructor call
+        destroy(storage_);
         new (storage_) A(std::forward<A>(awaiter));
+        assign_functions<A>();
+        return *this;
+    }
 
+  private:
+    template <typename A>
+    void assign_functions() {
         ready = [](void* storage) -> bool {
             return static_cast<A*>(storage)->await_ready();
         };
-        suspend = [](void* storage, std::coroutine_handle<> handle) {
-            static_cast<A*>(storage)->await_suspend(handle);
+        suspend = [](void* storage, std::coroutine_handle<> handle) -> bool {
+            if constexpr (std::is_void_v<
+                              decltype(std::declval<A>().await_suspend(
+                                  handle))>) {
+                static_cast<A*>(storage)->await_suspend(handle);
+                return true;
+            } else {
+                return static_cast<A*>(storage)->await_suspend(handle);
+            }
         };
         resume = [](void* storage) -> T {
             return static_cast<A*>(storage)->await_resume();
         };
-
-        return *this;
+        destroy = [](void* storage) { static_cast<A*>(storage)->~A(); };
     }
 
     bool await_ready() {
@@ -75,8 +78,9 @@ class Awaiter {
   private:
     alignas(alignof(std::max_align_t)) std::byte storage_[MaxSize];
     bool (*ready)(void*);
-    void (*suspend)(void*, std::coroutine_handle<>);  // TODO bool suspend
+    bool (*suspend)(void*, std::coroutine_handle<>);
     T (*resume)(void*);
+    void (*destroy)(void*);
 };
 
 }  // namespace dynamic

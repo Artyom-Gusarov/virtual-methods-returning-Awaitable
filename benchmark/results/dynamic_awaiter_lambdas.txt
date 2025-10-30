@@ -1,0 +1,21 @@
+2025-10-30T19:51:16+03:00
+Running ./benchmark_dynamic_awaiter_lambdas
+Run on (12 X 2095.99 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x6)
+  L1 Instruction 32 KiB (x6)
+  L2 Unified 512 KiB (x6)
+  L3 Unified 4096 KiB (x1)
+Load Average: 0.04, 0.30, 0.39
+***WARNING*** Library was built as DEBUG. Timings may be affected.
+----------------------------------------------------------------
+Benchmark                      Time             CPU   Iterations
+----------------------------------------------------------------
+BM_SyncDataUser<0>          85.0 ns         85.0 ns      8242812
+BM_SyncDataUser<1>           109 ns          109 ns      6421605
+BM_SyncDataUser<10>          299 ns          299 ns      2296148
+BM_SyncDataUser<100>        2441 ns         2441 ns       284372
+BM_AsyncDataUser<0>         92.4 ns         92.4 ns      7433603
+BM_AsyncDataUser<1>          115 ns          115 ns      6029684
+BM_AsyncDataUser<10>         323 ns          323 ns      2191078
+BM_AsyncDataUser<100>       2635 ns         2635 ns       265696

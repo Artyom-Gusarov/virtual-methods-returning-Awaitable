@@ -1,12 +1,7 @@
 #include <benchmark/benchmark.h>
 
-#include "simple_coro.h"
-
-#ifdef TEST_VIRTUAL_AWAITER
 #include "dynamic_awaiter_impl.hpp"
-#elif TEST_NEW_FUTURE
-#include "new_future_impl.hpp"
-#endif
+#include "simple_coro.h"
 
 class SharedDataUser {
   public:
@@ -110,16 +105,15 @@ BENCHMARK(BM_SyncDataUser<0>);
 BENCHMARK(BM_SyncDataUser<1>);
 BENCHMARK(BM_SyncDataUser<10>);
 BENCHMARK(BM_SyncDataUser<100>);
-BENCHMARK(BM_SyncDataUser<1000>);
 
 BENCHMARK(BM_AsyncDataUser<0>);
 BENCHMARK(BM_AsyncDataUser<1>);
 BENCHMARK(BM_AsyncDataUser<10>);
 BENCHMARK(BM_AsyncDataUser<100>);
 
-BENCHMARK(BM_MultiThreadDataUser<0>);
-BENCHMARK(BM_MultiThreadDataUser<1>);
-BENCHMARK(BM_MultiThreadDataUser<10>);
-BENCHMARK(BM_MultiThreadDataUser<100>);
+// BENCHMARK(BM_MultiThreadDataUser<0>);
+// BENCHMARK(BM_MultiThreadDataUser<1>);
+// BENCHMARK(BM_MultiThreadDataUser<10>);
+// BENCHMARK(BM_MultiThreadDataUser<100>);
 
 BENCHMARK_MAIN();

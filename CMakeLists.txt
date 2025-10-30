@@ -34,33 +34,33 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -Wextra -Wpedantic -Werror")
 
 
 add_executable(
-    benchmark_virtual_awaiter
+    benchmark_dynamic_awaiter_lambdas
     benchmark/shared_data_case.cpp
 )
-target_compile_definitions(benchmark_virtual_awaiter PRIVATE TEST_VIRTUAL_AWAITER)
-target_link_libraries(benchmark_virtual_awaiter benchmark::benchmark)
+target_compile_definitions(benchmark_dynamic_awaiter_lambdas PRIVATE TEST_DYNAMIC_AWAITER_LAMBDAS)
+target_link_libraries(benchmark_dynamic_awaiter_lambdas benchmark::benchmark)
 
 add_executable(
-    benchmark_new_future
+    benchmark_dynamic_awaiter_virtual_interface
     benchmark/shared_data_case.cpp
 )
-target_compile_definitions(benchmark_new_future PRIVATE TEST_NEW_FUTURE)
-target_link_libraries(benchmark_new_future benchmark::benchmark)
-
-
+target_compile_definitions(benchmark_dynamic_awaiter_virtual_interface PRIVATE TEST_DYNAMIC_AWAITER_VIRTUAL_INTERFACE)
+target_link_libraries(benchmark_dynamic_awaiter_virtual_interface benchmark::benchmark)
 
 add_executable(
-    test_virtual_awaiter
-    tests/virtual_awaiter.cpp
+    benchmark_dynamic_awaiter_virtual_base
+    benchmark/shared_data_case.cpp
 )
-target_link_libraries(test_virtual_awaiter gtest_main)
+target_compile_definitions(benchmark_dynamic_awaiter_virtual_base PRIVATE TEST_DYNAMIC_AWAITER_VIRTUAL_BASE)
+target_link_libraries(benchmark_dynamic_awaiter_virtual_base benchmark::benchmark)
 
 
 
 add_custom_target(run-all-benchmarks
-    DEPENDS benchmark_virtual_awaiter benchmark_new_future
-    COMMAND benchmark_virtual_awaiter --benchmark_out=${CMAKE_SOURCE_DIR}/benchmark/results/benchmark_virtual_awaiter.txt --benchmark_out_format=console
-    COMMAND benchmark_new_future --benchmark_out=${CMAKE_SOURCE_DIR}/benchmark/results/benchmark_new_future.txt --benchmark_out_format=console
+    DEPENDS benchmark_dynamic_awaiter_lambdas benchmark_dynamic_awaiter_virtual_interface benchmark_dynamic_awaiter_virtual_base
+    COMMAND benchmark_dynamic_awaiter_lambdas --benchmark_out=${CMAKE_SOURCE_DIR}/benchmark/results/dynamic_awaiter_lambdas.txt --benchmark_out_format=console
+    COMMAND benchmark_dynamic_awaiter_virtual_interface --benchmark_out=${CMAKE_SOURCE_DIR}/benchmark/results/dynamic_awaiter_virtual_interface.txt --benchmark_out_format=console
+    COMMAND benchmark_dynamic_awaiter_virtual_base --benchmark_out=${CMAKE_SOURCE_DIR}/benchmark/results/dynamic_awaiter_virtual_base.txt --benchmark_out_format=console
 )
 
 add_custom_target(init_all_builds

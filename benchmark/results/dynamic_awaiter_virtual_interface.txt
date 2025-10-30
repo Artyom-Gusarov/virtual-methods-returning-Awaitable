@@ -1,0 +1,21 @@
+2025-10-30T19:51:23+03:00
+Running ./benchmark_dynamic_awaiter_virtual_interface
+Run on (12 X 2095.99 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x6)
+  L1 Instruction 32 KiB (x6)
+  L2 Unified 512 KiB (x6)
+  L3 Unified 4096 KiB (x1)
+Load Average: 0.18, 0.32, 0.39
+***WARNING*** Library was built as DEBUG. Timings may be affected.
+----------------------------------------------------------------
+Benchmark                      Time             CPU   Iterations
+----------------------------------------------------------------
+BM_SyncDataUser<0>          86.2 ns         86.2 ns      8029778
+BM_SyncDataUser<1>           109 ns          109 ns      6476047
+BM_SyncDataUser<10>          295 ns          295 ns      2422587
+BM_SyncDataUser<100>        2436 ns         2436 ns       285938
+BM_AsyncDataUser<0>         89.8 ns         89.8 ns      7584424
+BM_AsyncDataUser<1>          109 ns          109 ns      6385634
+BM_AsyncDataUser<10>         316 ns          316 ns      2204339
+BM_AsyncDataUser<100>       2668 ns         2668 ns       262223

@@ -15,8 +15,7 @@ class SharedDataBase {
 class SharedDataStorage : public SharedDataBase {
     class Awaiter {
       public:
-        Awaiter(simple::SharedData& data)
-            : awaiterImpl_{data.operator co_await()} {
+        Awaiter(simple::SharedData& data) : awaiterImpl_{data.operator co_await()} {
         }
 
         bool await_ready() {
@@ -32,8 +31,7 @@ class SharedDataStorage : public SharedDataBase {
         }
 
       private:
-        decltype(std::declval<simple::SharedData>().operator co_await())
-            awaiterImpl_;
+        decltype(std::declval<simple::SharedData>().operator co_await()) awaiterImpl_;
     };
 
   public:
@@ -54,8 +52,7 @@ class SharedDataTransform : public SharedDataBase {
     class Awaiter {
       public:
         Awaiter(TransformFunc&& func, dAwaiter& data)
-            : baseAwaiter_(data),
-              transformFunc_(std::forward<TransformFunc>(func)) {
+            : baseAwaiter_(data), transformFunc_(std::forward<TransformFunc>(func)) {
         }
 
         bool await_ready() {
@@ -76,10 +73,8 @@ class SharedDataTransform : public SharedDataBase {
     };
 
   public:
-    SharedDataTransform(TransformFunc&& func,
-                        std::shared_ptr<SharedDataBase> baseData)
-        : baseData_(baseData), baseAwaiter_(baseData_->asyncGet()),
-          transformFunc_(std::forward<TransformFunc>(func)) {
+    SharedDataTransform(TransformFunc&& func, std::shared_ptr<SharedDataBase> baseData)
+        : baseData_(baseData), baseAwaiter_(baseData_->asyncGet()), transformFunc_(std::forward<TransformFunc>(func)) {
     }
 
     dAwaiter asyncGet() final {

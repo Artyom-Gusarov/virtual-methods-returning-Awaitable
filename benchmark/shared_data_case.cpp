@@ -13,9 +13,8 @@ class SharedDataUser {
     SharedDataUser(std::shared_ptr<SharedDataBase> data) : data_(data) {
     }
 
-    simple::Future getData() {
-        int value = co_await data_->asyncGet();
-        co_return value;
+    auto getDataValue() {
+        return data_->asyncGet();
     }
 
     template <typename TransformFunc>
@@ -28,15 +27,18 @@ class SharedDataUser {
     std::shared_ptr<SharedDataBase> data_;
 };
 
+template <size_t TransformsCount>
 void BM_SyncDataUser(benchmark::State& state) {
     for (auto _ : state) {
         auto future = []() -> simple::Future {
             auto storage = std::make_shared<SharedDataStorage>();
             storage->setData(42);
-            SharedDataUser user(storage);
-            user.transformData([](int value) { return value * 2; });
-            int result = co_await user.getData();
-            assert(result == 84);
+            SharedDataUser user(std::move(storage));
+            for (size_t i = 0; i < TransformsCount; ++i) {
+                user.transformData([](int value) { return value + 1; });
+            }
+            int result = co_await user.getDataValue();
+            assert(result == 42 + TransformsCount);
             benchmark::DoNotOptimize(result);
             co_return 0;
         }();
@@ -44,6 +46,7 @@ void BM_SyncDataUser(benchmark::State& state) {
     }
 }
 
+template <size_t TransformsCount>
 void BM_AsyncDataUser(benchmark::State& state) {
     std::atomic<SharedDataStorage*> storagePtr = nullptr;
     bool finishFlag = false;
@@ -64,10 +67,12 @@ void BM_AsyncDataUser(benchmark::State& state) {
             auto storage = std::make_shared<SharedDataStorage>();
             storagePtr.store(storage.get());
             storagePtr.notify_one();
-            SharedDataUser user(storage);
-            user.transformData([](int value) { return value * 2; });
-            int result = co_await user.getData();
-            assert(result == 84);
+            SharedDataUser user(std::move(storage));
+            for (size_t i = 0; i < TransformsCount; ++i) {
+                user.transformData([](int value) { return value + 1; });
+            }
+            int result = co_await user.getDataValue();
+            assert(result == 42 + TransformsCount);
             benchmark::DoNotOptimize(result);
             co_return 0;
         }();
@@ -80,6 +85,14 @@ void BM_AsyncDataUser(benchmark::State& state) {
     setterThread.join();
 }
 
-BENCHMARK(BM_SyncDataUser);
-BENCHMARK(BM_AsyncDataUser);
+BENCHMARK(BM_SyncDataUser<0>);
+BENCHMARK(BM_SyncDataUser<1>);
+BENCHMARK(BM_SyncDataUser<10>);
+BENCHMARK(BM_SyncDataUser<100>);
+
+BENCHMARK(BM_AsyncDataUser<0>);
+BENCHMARK(BM_AsyncDataUser<1>);
+BENCHMARK(BM_AsyncDataUser<10>);
+BENCHMARK(BM_AsyncDataUser<100>);
+
 BENCHMARK_MAIN();

@@ -5,7 +5,7 @@
 
 class SharedDataBase {
   protected:
-    using dAwaiter = dynamic::Awaiter<int, 24>;
+    using dAwaiter = dynamic::Awaiter<int, 16>;
 
   public:
     virtual dAwaiter asyncGet() = 0;
@@ -13,27 +13,25 @@ class SharedDataBase {
 };
 
 class SharedDataStorage : public SharedDataBase {
-    class Awaiter : public dynamic::AwaiterBase {
+    class Awaiter {
       public:
-        Awaiter(simple::SharedData& data)
-            : awaiterImpl_{data.operator co_await()} {
+        Awaiter(simple::SharedData& data) : awaiterImpl_{data.operator co_await()} {
         }
 
-        bool await_ready() final {
+        bool await_ready() {
             return awaiterImpl_.await_ready();
         }
 
-        void await_suspend(std::coroutine_handle<> handle) final {
+        void await_suspend(std::coroutine_handle<> handle) {
             awaiterImpl_.await_suspend(handle);
         }
 
-        int await_resume() final {
+        int await_resume() {
             return awaiterImpl_.await_resume();
         }
 
       private:
-        decltype(std::declval<simple::SharedData>().operator co_await())
-            awaiterImpl_;
+        decltype(std::declval<simple::SharedData>().operator co_await()) awaiterImpl_;
     };
 
   public:
@@ -51,22 +49,21 @@ class SharedDataStorage : public SharedDataBase {
 
 template <typename TransformFunc>
 class SharedDataTransform : public SharedDataBase {
-    class Awaiter : public dynamic::AwaiterBase {
+    class Awaiter {
       public:
         Awaiter(TransformFunc&& func, dAwaiter& data)
-            : baseAwaiter_(data),
-              transformFunc_(std::forward<TransformFunc>(func)) {
+            : baseAwaiter_(data), transformFunc_(std::forward<TransformFunc>(func)) {
         }
 
-        bool await_ready() final {
+        bool await_ready() {
             return baseAwaiter_.await_ready();
         }
 
-        void await_suspend(std::coroutine_handle<> handle) final {
+        void await_suspend(std::coroutine_handle<> handle) {
             baseAwaiter_.await_suspend(handle);
         }
 
-        int await_resume() final {
+        int await_resume() {
             return transformFunc_(baseAwaiter_.await_resume());
         }
 
@@ -76,10 +73,8 @@ class SharedDataTransform : public SharedDataBase {
     };
 
   public:
-    SharedDataTransform(TransformFunc&& func,
-                        std::shared_ptr<SharedDataBase> baseData)
-        : baseData_(baseData), baseAwaiter_(baseData_->asyncGet()),
-          transformFunc_(std::forward<TransformFunc>(func)) {
+    SharedDataTransform(TransformFunc&& func, std::shared_ptr<SharedDataBase> baseData)
+        : baseData_(baseData), baseAwaiter_(baseData_->asyncGet()), transformFunc_(std::forward<TransformFunc>(func)) {
     }
 
     dAwaiter asyncGet() final {

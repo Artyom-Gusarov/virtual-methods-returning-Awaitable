@@ -19,8 +19,8 @@ class SharedDataUser {
 
     template <typename TransformFunc>
     void transformData(TransformFunc&& func) {
-        data_ = std::make_shared<SharedDataTransform<TransformFunc>>(
-            std::forward<TransformFunc>(func), std::move(data_));
+        data_ =
+            std::make_shared<SharedDataTransform<TransformFunc>>(std::forward<TransformFunc>(func), std::move(data_));
     }
 
   private:
@@ -110,6 +110,7 @@ BENCHMARK(BM_SyncDataUser<0>);
 BENCHMARK(BM_SyncDataUser<1>);
 BENCHMARK(BM_SyncDataUser<10>);
 BENCHMARK(BM_SyncDataUser<100>);
+BENCHMARK(BM_SyncDataUser<1000>);
 
 BENCHMARK(BM_AsyncDataUser<0>);
 BENCHMARK(BM_AsyncDataUser<1>);

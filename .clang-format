@@ -9,3 +9,4 @@ DerivePointerAlignment: false
 PointerAlignment: Left
 AlwaysBreakTemplateDeclarations: true
 InsertBraces: true
+ColumnLimit: 120

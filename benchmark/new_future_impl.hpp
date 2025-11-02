@@ -25,10 +25,8 @@ class SharedDataStorage : public SharedDataBase {
 template <typename TransformFunc>
 class SharedDataTransform : public SharedDataBase {
   public:
-    SharedDataTransform(TransformFunc&& func,
-                        std::shared_ptr<SharedDataBase> baseData)
-        : baseData_(baseData),
-          transformFunc_(std::forward<TransformFunc>(func)) {
+    SharedDataTransform(TransformFunc&& func, std::shared_ptr<SharedDataBase> baseData)
+        : baseData_(baseData), transformFunc_(std::forward<TransformFunc>(func)) {
     }
 
     simple::Future asyncGet() final {

@@ -59,6 +59,10 @@ class SharedData {
         }
     }
 
+    bool unsafeIsReady() {
+        return ready_;
+    }
+
   private:
     std::mutex mutex_;
     std::coroutine_handle<> callerHandle_;
@@ -78,6 +82,10 @@ class Future {
 
     void blockingWait() {
         data_->blockingWait();
+    }
+
+    bool unsafeIsReady() {
+        return data_->unsafeIsReady();
     }
 
   private:

@@ -42,7 +42,7 @@ void BM_SyncDataUser(benchmark::State& state) {
             benchmark::DoNotOptimize(result);
             co_return 0;
         }();
-        future.blockingWait();
+        assert(future.unsafeIsReady());
     }
 }
 
@@ -63,7 +63,7 @@ void BM_AsyncDataUser(benchmark::State& state) {
             co_return 0;
         }();
         storagePtr->setData(42);
-        future.blockingWait();
+        assert(future.unsafeIsReady());
     }
 }
 
@@ -116,6 +116,7 @@ BENCHMARK(BM_AsyncDataUser<0>);
 BENCHMARK(BM_AsyncDataUser<1>);
 BENCHMARK(BM_AsyncDataUser<10>);
 BENCHMARK(BM_AsyncDataUser<100>);
+BENCHMARK(BM_AsyncDataUser<1000>);
 
 BENCHMARK(BM_MultiThreadDataUser<0>);
 BENCHMARK(BM_MultiThreadDataUser<1>);

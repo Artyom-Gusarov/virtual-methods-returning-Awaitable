@@ -48,6 +48,27 @@ void BM_SyncDataUser(benchmark::State& state) {
 
 template <size_t TransformsCount>
 void BM_AsyncDataUser(benchmark::State& state) {
+    for (auto _ : state) {
+        SharedDataStorage* storagePtr = nullptr;
+        auto future = [&storagePtr]() -> simple::Future {
+            auto storage = std::make_shared<SharedDataStorage>();
+            storagePtr = storage.get();
+            SharedDataUser user(std::move(storage));
+            for (size_t i = 0; i < TransformsCount; ++i) {
+                user.transformData([](int value) { return value + 1; });
+            }
+            int result = co_await user.getDataValue();
+            assert(result == 42 + TransformsCount);
+            benchmark::DoNotOptimize(result);
+            co_return 0;
+        }();
+        storagePtr->setData(42);
+        future.blockingWait();
+    }
+}
+
+template <size_t TransformsCount>
+void BM_MultiThreadDataUser(benchmark::State& state) {
     std::atomic<SharedDataStorage*> storagePtr = nullptr;
     bool finishFlag = false;
 
@@ -95,5 +116,10 @@ BENCHMARK(BM_AsyncDataUser<0>);
 BENCHMARK(BM_AsyncDataUser<1>);
 BENCHMARK(BM_AsyncDataUser<10>);
 BENCHMARK(BM_AsyncDataUser<100>);
+
+BENCHMARK(BM_MultiThreadDataUser<0>);
+BENCHMARK(BM_MultiThreadDataUser<1>);
+BENCHMARK(BM_MultiThreadDataUser<10>);
+BENCHMARK(BM_MultiThreadDataUser<100>);
 
 BENCHMARK_MAIN();

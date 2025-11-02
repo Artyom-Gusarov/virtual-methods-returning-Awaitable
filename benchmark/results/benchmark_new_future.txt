@@ -1,6 +1,6 @@
 2025-10-30T05:02:50+03:00
 Running ./benchmark_new_future
-Run on (12 X 2096 MHz CPU s)
+Run on (12 X 2095.99 MHz CPU s)
 CPU Caches:
   L1 Data 32 KiB (x6)
   L1 Instruction 32 KiB (x6)

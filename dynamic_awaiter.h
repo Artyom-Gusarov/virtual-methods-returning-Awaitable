@@ -37,6 +37,19 @@ class Awaiter {
         return *this;
     }
 
+    // Fallbacks for compile errors readability
+    template <AwaiterType<T> A>
+        requires(!(sizeof(A) <= MaxSize && alignof(A) <= alignof(std::max_align_t)))
+    Awaiter(A&&) {
+        static_assert(sizeof(A) <= MaxSize && alignof(A) <= alignof(std::max_align_t));
+    }
+
+    template <AwaiterType<T> A>
+        requires(!(sizeof(A) <= MaxSize && alignof(A) <= alignof(std::max_align_t)))
+    Awaiter& operator=(A&&) noexcept {
+        static_assert(sizeof(A) <= MaxSize && alignof(A) <= alignof(std::max_align_t));
+    }
+
     bool await_ready() {
         return ready(storage_);
     }

@@ -50,10 +50,10 @@ target_link_libraries(benchmark_new_future benchmark::benchmark)
 
 
 add_executable(
-    test_virtual_awaiter
-    tests/virtual_awaiter.cpp
+    test_dynamic_awaiter
+    tests/dynamic_awaiter.cpp
 )
-target_link_libraries(test_virtual_awaiter gtest_main)
+target_link_libraries(test_dynamic_awaiter gtest_main)
 
 
 

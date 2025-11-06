@@ -9,10 +9,14 @@ namespace internal {
 template <class R>
 concept await_suspend_result = std::same_as<R, void> || std::same_as<R, bool>;
 
+template <typename A, size_t MaxSize>
+concept FitsStorage = (sizeof(std::remove_cvref_t<A>) <= MaxSize) &&
+                      (alignof(std::remove_cvref_t<A>) <= alignof(std::max_align_t));
+
 }  // namespace internal
 
 template <class A, class T>
-concept AwaiterType = requires(A a, std::coroutine_handle<> h) {
+concept AwaiterType = requires(std::remove_cvref_t<A> a, std::coroutine_handle<> h) {
                           { a.await_ready() } -> std::same_as<bool>;
                           { a.await_resume() } -> std::same_as<T>;
                           { a.await_suspend(h) } -> internal::await_suspend_result;
@@ -22,18 +26,18 @@ template <typename T, size_t MaxSize>
 class Awaiter {
   public:
     template <AwaiterType<T> A>
-        requires(sizeof(A) <= MaxSize && alignof(A) <= alignof(std::max_align_t))
+        requires(internal::FitsStorage<A, MaxSize>)
     Awaiter(A&& awaiter) {
-        new (storage_) A(std::forward<A>(awaiter));
-        assign_functions<A>();
+        new (storage_) std::remove_cvref_t<A>(std::forward<A>(awaiter));
+        assign_functions<std::remove_cvref_t<A>>();
     }
 
     template <AwaiterType<T> A>
-        requires(sizeof(A) <= MaxSize && alignof(A) <= alignof(std::max_align_t))
-    Awaiter& operator=(A&& awaiter) noexcept {
+        requires(internal::FitsStorage<A, MaxSize>)
+    Awaiter& operator=(A&& awaiter) {
         destroy(storage_);
-        new (storage_) A(std::forward<A>(awaiter));
-        assign_functions<A>();
+        new (storage_) std::remove_cvref_t<A>(std::forward<A>(awaiter));
+        assign_functions<std::remove_cvref_t<A>>();
         return *this;
     }
 
@@ -45,13 +49,13 @@ class Awaiter {
     template <typename A>
     Awaiter(A&&) {
         static_assert(AwaiterType<A, T>);
-        static_assert(sizeof(A) <= MaxSize && alignof(A) <= alignof(std::max_align_t));
+        static_assert(internal::FitsStorage<A, MaxSize>);
     }
 
     template <typename A>
-    Awaiter& operator=(A&&) noexcept {
+    Awaiter& operator=(A&&) {
         static_assert(AwaiterType<A, T>);
-        static_assert(sizeof(A) <= MaxSize && alignof(A) <= alignof(std::max_align_t));
+        static_assert(internal::FitsStorage<A, MaxSize>);
     }
 
     bool await_ready() {

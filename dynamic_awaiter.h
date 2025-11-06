@@ -69,17 +69,17 @@ class Awaiter {
   private:
     template <typename A>
     void assign_functions() {
-        ready = [](void* storage) -> bool { return static_cast<A*>(storage)->await_ready(); };
+        ready = [](void* storage) -> bool { return static_cast<A*>(storage)->A::await_ready(); };
         suspend = [](void* storage, std::coroutine_handle<> handle) -> bool {
-            if constexpr (std::is_void_v<decltype(std::declval<A>().await_suspend(handle))>) {
-                static_cast<A*>(storage)->await_suspend(handle);
+            if constexpr (std::is_void_v<decltype(std::declval<A>().A::await_suspend(handle))>) {
+                static_cast<A*>(storage)->A::await_suspend(handle);
                 return true;
             } else {
-                return static_cast<A*>(storage)->await_suspend(handle);
+                return static_cast<A*>(storage)->A::await_suspend(handle);
             }
         };
-        resume = [](void* storage) -> T { return static_cast<A*>(storage)->await_resume(); };
-        destroy = [](void* storage) { static_cast<A*>(storage)->~A(); };
+        resume = [](void* storage) -> T { return static_cast<A*>(storage)->A::await_resume(); };
+        destroy = [](void* storage) { static_cast<A*>(storage)->A::~A(); };
     }
 
   private:

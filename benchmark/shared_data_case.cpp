@@ -2,7 +2,7 @@
 
 #include "simple_coro.h"
 
-#ifdef TEST_VIRTUAL_AWAITER
+#ifdef TEST_DYNAMIC_AWAITER
 #include "dynamic_awaiter_impl.hpp"
 #elif TEST_NEW_FUTURE
 #include "new_future_impl.hpp"
@@ -19,8 +19,8 @@ class SharedDataUser {
 
     template <typename TransformFunc>
     void transformData(TransformFunc&& func) {
-        data_ =
-            std::make_shared<SharedDataTransform<std::remove_cvref_t<TransformFunc>>>(std::forward<TransformFunc>(func), std::move(data_));
+        data_ = std::make_shared<SharedDataTransform<std::remove_cvref_t<TransformFunc>>>(
+            std::forward<TransformFunc>(func), std::move(data_));
     }
 
   private:

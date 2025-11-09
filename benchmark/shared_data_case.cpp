@@ -20,7 +20,7 @@ class SharedDataUser {
     template <typename TransformFunc>
     void transformData(TransformFunc&& func) {
         data_ =
-            std::make_shared<SharedDataTransform<TransformFunc>>(std::forward<TransformFunc>(func), std::move(data_));
+            std::make_shared<SharedDataTransform<std::remove_cvref_t<TransformFunc>>>(std::forward<TransformFunc>(func), std::move(data_));
     }
 
   private:

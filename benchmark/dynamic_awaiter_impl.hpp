@@ -51,8 +51,7 @@ template <typename TransformFunc>
 class SharedDataTransform : public SharedDataBase {
     class Awaiter {
       public:
-        Awaiter(TransformFunc&& func, dAwaiter& data)
-            : baseAwaiter_(data), transformFunc_(std::forward<TransformFunc>(func)) {
+        Awaiter(dAwaiter& baseAwaiter, TransformFunc& func) : baseAwaiter_(baseAwaiter), transformFunc_(func) {
         }
 
         bool await_ready() {
@@ -69,16 +68,17 @@ class SharedDataTransform : public SharedDataBase {
 
       private:
         dAwaiter& baseAwaiter_;
-        TransformFunc transformFunc_;
+        TransformFunc& transformFunc_;
     };
 
   public:
-    SharedDataTransform(TransformFunc&& func, std::shared_ptr<SharedDataBase> baseData)
-        : baseData_(baseData), baseAwaiter_(baseData_->asyncGet()), transformFunc_(std::forward<TransformFunc>(func)) {
+    template <typename F>
+    SharedDataTransform(F&& func, std::shared_ptr<SharedDataBase> baseData)
+        : baseData_(baseData), baseAwaiter_(baseData_->asyncGet()), transformFunc_(std::forward<F>(func)) {
     }
 
     dAwaiter asyncGet() final {
-        return Awaiter(std::move(transformFunc_), baseAwaiter_);
+        return Awaiter(baseAwaiter_, transformFunc_);
     }
 
   private:

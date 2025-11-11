@@ -1,6 +1,7 @@
 #pragma once
 
 #include <coroutine>
+#include <cstring>
 
 namespace dynamic {
 
@@ -22,6 +23,57 @@ concept AwaiterType = requires(std::remove_cvref_t<A> a, std::coroutine_handle<>
                           { a.await_suspend(h) } -> internal::AwaitSuspendResult;
                       };
 
+namespace internal {
+
+template <typename T>
+struct AwaiterInterface {
+    virtual bool await_ready(void* storage) = 0;
+
+    virtual bool await_suspend(void* storage, std::coroutine_handle<> handle) = 0;
+
+    virtual T await_resume(void* storage) = 0;
+
+    virtual void destroy(void* storage) = 0;
+
+    virtual void copy(void* dest, const void* src) = 0;
+
+    virtual void move(void* dest, void* src) = 0;
+};
+
+template <typename T, AwaiterType<T> A>
+struct AwaiterInterfaceWrapper : AwaiterInterface<T> {
+    bool await_ready(void* storage) final {
+        return static_cast<A*>(storage)->A::await_ready();
+    }
+
+    bool await_suspend(void* storage, std::coroutine_handle<> handle) final {
+        if constexpr (std::is_void_v<decltype(std::declval<A>().A::await_suspend(handle))>) {
+            static_cast<A*>(storage)->A::await_suspend(handle);
+            return true;
+        } else {
+            return static_cast<A*>(storage)->A::await_suspend(handle);
+        }
+    }
+
+    T await_resume(void* storage) final {
+        return static_cast<A*>(storage)->A::await_resume();
+    }
+
+    void destroy(void* storage) final {
+        static_cast<A*>(storage)->A::~A();
+    }
+
+    void copy(void* dest, const void* src) final {
+        new (dest) A(*static_cast<const A*>(src));
+    }
+
+    void move(void* dest, void* src) final {
+        new (dest) A(std::move(*static_cast<A*>(src)));
+    }
+};
+
+}  // namespace internal
+
 template <typename T, size_t MaxSize>
 class Awaiter {
   public:
@@ -35,58 +87,42 @@ class Awaiter {
     template <AwaiterType<T> A>
         requires(internal::FitsStorage<A, MaxSize>)
     Awaiter& operator=(A&& awaiter) {
-        destroy(storage_);
+        reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->destroy(storage_);
         new (storage_) std::remove_cvref_t<A>(std::forward<A>(awaiter));
         assign_functions<std::remove_cvref_t<A>>();
         return *this;
     }
 
     Awaiter(const Awaiter& other) {
-        other.copy(storage_, other.storage_);
-        ready = other.ready;
-        suspend = other.suspend;
-        resume = other.resume;
-        destroy = other.destroy;
-        copy = other.copy;
+        std::memcpy(interfaceStorage_, other.interfaceStorage_, sizeof(interfaceStorage_));
+        reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->copy(storage_, other.storage_);
     }
 
     Awaiter& operator=(const Awaiter& other) {
         if (this != &other) {
-            destroy(storage_);
-            ready = other.ready;
-            suspend = other.suspend;
-            resume = other.resume;
-            destroy = other.destroy;
-            copy = other.copy;
-            copy(storage_, other.storage_);
+            reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->destroy(storage_);
+            std::memcpy(interfaceStorage_, other.interfaceStorage_, sizeof(interfaceStorage_));
+            reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->copy(storage_, other.storage_);
         }
         return *this;
     }
 
     Awaiter(Awaiter&& other) {
-        other.move(storage_, other.storage_);
-        ready = other.ready;
-        suspend = other.suspend;
-        resume = other.resume;
-        destroy = other.destroy;
-        copy = other.copy;
+        std::memcpy(interfaceStorage_, other.interfaceStorage_, sizeof(interfaceStorage_));
+        reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->move(storage_, other.storage_);
     }
 
     Awaiter& operator=(Awaiter&& other) {
         if (this != &other) {
-            destroy(storage_);
-            ready = other.ready;
-            suspend = other.suspend;
-            resume = other.resume;
-            destroy = other.destroy;
-            copy = other.copy;
-            move(storage_, other.storage_);
+            reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->destroy(storage_);
+            std::memcpy(interfaceStorage_, other.interfaceStorage_, sizeof(interfaceStorage_));
+            reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->move(storage_, other.storage_);
         }
         return *this;
     }
 
     ~Awaiter() {
-        destroy(storage_);
+        reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->destroy(storage_);
     }
 
     // Fallbacks for compile errors readability
@@ -107,43 +143,26 @@ class Awaiter {
     }
 
     bool await_ready() {
-        return ready(storage_);
+        return reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->await_ready(storage_);
     }
 
     auto await_suspend(std::coroutine_handle<> handle) {
-        return suspend(storage_, handle);
+        return reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->await_suspend(storage_, handle);
     }
 
     T await_resume() {
-        return resume(storage_);
+        return reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->await_resume(storage_);
     }
 
   private:
     template <typename A>
     void assign_functions() {
-        ready = [](void* storage) -> bool { return static_cast<A*>(storage)->A::await_ready(); };
-        suspend = [](void* storage, std::coroutine_handle<> handle) -> bool {
-            if constexpr (std::is_void_v<decltype(std::declval<A>().A::await_suspend(handle))>) {
-                static_cast<A*>(storage)->A::await_suspend(handle);
-                return true;
-            } else {
-                return static_cast<A*>(storage)->A::await_suspend(handle);
-            }
-        };
-        resume = [](void* storage) -> T { return static_cast<A*>(storage)->A::await_resume(); };
-        destroy = [](void* storage) { static_cast<A*>(storage)->A::~A(); };
-        copy = [](void* dest, const void* src) { new (dest) A(*static_cast<const A*>(src)); };
-        move = [](void* dest, void* src) { new (dest) A(std::move(*static_cast<A*>(src))); };
+        new (interfaceStorage_) internal::AwaiterInterfaceWrapper<T, A>();
     }
 
   private:
     alignas(alignof(std::max_align_t)) std::byte storage_[MaxSize];
-    bool (*ready)(void*);
-    bool (*suspend)(void*, std::coroutine_handle<>);
-    T (*resume)(void*);
-    void (*destroy)(void*);
-    void (*copy)(void*, const void*);
-    void (*move)(void*, void*);
+    alignas(alignof(internal::AwaiterInterface<T>)) std::byte interfaceStorage_[sizeof(internal::AwaiterInterface<T>)];
 };
 
 }  // namespace dynamic

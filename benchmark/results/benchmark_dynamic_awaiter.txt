@@ -1,27 +1,27 @@
-2025-11-11T08:12:41+03:00
+2025-11-11T08:26:39+03:00
 Running ./benchmark_dynamic_awaiter
-Run on (12 X 2096 MHz CPU s)
+Run on (12 X 2095.99 MHz CPU s)
 CPU Caches:
   L1 Data 32 KiB (x6)
   L1 Instruction 32 KiB (x6)
   L2 Unified 512 KiB (x6)
   L3 Unified 4096 KiB (x1)
-Load Average: 0.60, 0.40, 0.42
+Load Average: 0.86, 0.58, 0.25
 ***WARNING*** Library was built as DEBUG. Timings may be affected.
 ----------------------------------------------------------------------
 Benchmark                            Time             CPU   Iterations
 ----------------------------------------------------------------------
-BM_SyncDataUser<0>                73.9 ns         73.9 ns      9313130
-BM_SyncDataUser<1>                 103 ns          103 ns      6807672
-BM_SyncDataUser<10>                343 ns          343 ns      2030181
-BM_SyncDataUser<100>              3407 ns         3407 ns       206511
-BM_SyncDataUser<1000>            56604 ns        56182 ns        12246
-BM_AsyncDataUser<0>               83.7 ns         83.7 ns      8145030
-BM_AsyncDataUser<1>                105 ns          105 ns      6630548
-BM_AsyncDataUser<10>               361 ns          361 ns      1911590
-BM_AsyncDataUser<100>             3539 ns         3539 ns       196602
-BM_AsyncDataUser<1000>           58500 ns        58017 ns        12197
-BM_MultiThreadDataUser<0>          963 ns          962 ns       674576
-BM_MultiThreadDataUser<1>         1070 ns         1067 ns       571679
-BM_MultiThreadDataUser<10>        2870 ns         2746 ns       405128
-BM_MultiThreadDataUser<100>      18748 ns        18436 ns        39597
+BM_SyncDataUser<0>                74.4 ns         74.4 ns      9161262
+BM_SyncDataUser<1>                 107 ns          107 ns      6405263
+BM_SyncDataUser<10>                307 ns          307 ns      2281057
+BM_SyncDataUser<100>              2354 ns         2354 ns       293089
+BM_SyncDataUser<1000>            23885 ns        23872 ns        29582
+BM_AsyncDataUser<0>               84.7 ns         84.6 ns      8248956
+BM_AsyncDataUser<1>                118 ns          118 ns      5923412
+BM_AsyncDataUser<10>               334 ns          334 ns      1961889
+BM_AsyncDataUser<100>             2613 ns         2613 ns       271843
+BM_AsyncDataUser<1000>           26166 ns        26166 ns        26926
+BM_MultiThreadDataUser<0>         1000 ns          998 ns       656548
+BM_MultiThreadDataUser<1>         1053 ns         1051 ns       641217
+BM_MultiThreadDataUser<10>        1148 ns         1147 ns       647536
+BM_MultiThreadDataUser<100>       4132 ns         4129 ns       182754

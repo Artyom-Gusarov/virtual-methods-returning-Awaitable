@@ -64,7 +64,11 @@ struct AwaiterInterfaceWrapper : AwaiterInterface<T> {
     }
 
     void copy(void* dest, const void* src) final {
-        new (dest) A(*static_cast<const A*>(src));
+        if constexpr (std::is_copy_constructible_v<A>) {
+            new (dest) A(*static_cast<const A*>(src));
+        } else {
+            throw std::logic_error("Attempted to copy a non-copyable awaiter type");
+        }
     }
 
     void move(void* dest, void* src) final {

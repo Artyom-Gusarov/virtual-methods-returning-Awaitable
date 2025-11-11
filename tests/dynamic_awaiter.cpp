@@ -74,8 +74,7 @@ struct AwaiterReturning {
         return false;
     }
 
-    bool await_suspend(std::coroutine_handle<>) {
-        return true;
+    void await_suspend(std::coroutine_handle<>) {
     }
 
     int await_resume() {
@@ -87,6 +86,27 @@ struct AwaiterReturning {
     }
 
     int value_ = V;
+};
+
+struct NonCopyableAwaiter {
+    NonCopyableAwaiter() = default;
+
+    NonCopyableAwaiter(const NonCopyableAwaiter&) = delete;
+    NonCopyableAwaiter(NonCopyableAwaiter&&) = default;
+
+    NonCopyableAwaiter& operator=(const NonCopyableAwaiter&) = delete;
+    NonCopyableAwaiter& operator=(NonCopyableAwaiter&&) = default;
+
+    bool await_ready() {
+        return false;
+    }
+
+    void await_suspend(std::coroutine_handle<>) {
+    }
+
+    int await_resume() {
+        return 42;
+    }
 };
 
 int CounterAwaiter::destructionCount = 0;
@@ -193,4 +213,23 @@ TEST(SaveDynamicType, Move) {
     EXPECT_EQ(b.await_resume(), 52);
     b = std::move(a);
     EXPECT_EQ(b.await_resume(), 42);
+}
+
+TEST(NonCopyableAwaiter, ConstructAndMove) {
+    dynamic::Awaiter<int, 1> a(NonCopyableAwaiter{});
+    checkAwaiter(a);
+    dynamic::Awaiter<int, 1> b(std::move(a));
+    checkAwaiter(b);
+    a = std::move(b);
+    checkAwaiter(a);
+
+    try {
+        b = a;
+    } catch (std::logic_error& e) {
+        assert(std::string(e.what()) == "Attempted to copy a non-copyable awaiter type");
+    }
+
+    // This causes a compile time failure as expected
+    // NonCopyableAwaiter obj;
+    // dynamic::Awaiter<int, 1> c(obj);
 }

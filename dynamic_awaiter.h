@@ -53,6 +53,11 @@ class Awaiter {
     Awaiter& operator=(const Awaiter& other) {
         if (this != &other) {
             destroy(storage_);
+            ready = other.ready;
+            suspend = other.suspend;
+            resume = other.resume;
+            destroy = other.destroy;
+            copy = other.copy;
             copy(storage_, other.storage_);
         }
         return *this;
@@ -70,6 +75,11 @@ class Awaiter {
     Awaiter& operator=(Awaiter&& other) {
         if (this != &other) {
             destroy(storage_);
+            ready = other.ready;
+            suspend = other.suspend;
+            resume = other.resume;
+            destroy = other.destroy;
+            copy = other.copy;
             move(storage_, other.storage_);
         }
         return *this;

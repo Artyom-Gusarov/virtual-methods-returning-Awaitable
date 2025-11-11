@@ -68,6 +68,27 @@ struct CounterAwaiter {
     }
 };
 
+template <int V>
+struct AwaiterReturning {
+    bool await_ready() {
+        return false;
+    }
+
+    bool await_suspend(std::coroutine_handle<>) {
+        return true;
+    }
+
+    int await_resume() {
+        return V;
+    }
+
+    ~AwaiterReturning() {
+        assert((value_ == V) && "value_ does not match V, called incorrect destructor");
+    }
+
+    int value_ = V;
+};
+
 int CounterAwaiter::destructionCount = 0;
 int CounterAwaiter::copyCount = 0;
 int CounterAwaiter::moveCount = 0;
@@ -147,4 +168,29 @@ TEST(IsMoveable, ConstructAndAssign) {
     checkAwaiter(a);
     EXPECT_EQ(CounterAwaiter::copyCount, 0);
     EXPECT_EQ(CounterAwaiter::moveCount, 3);
+}
+
+TEST(SaveDynamicType, AssignAwaiter) {
+    dynamic::Awaiter<int, 4> a(AwaiterReturning<42>{});
+    EXPECT_EQ(a.await_resume(), 42);
+    a = AwaiterReturning<52>{};
+    EXPECT_EQ(a.await_resume(), 52);
+}
+
+TEST(SaveDynamicType, Copy) {
+    dynamic::Awaiter<int, 4> a(AwaiterReturning<42>{});
+    dynamic::Awaiter<int, 4> b(AwaiterReturning<52>{});
+    EXPECT_EQ(a.await_resume(), 42);
+    EXPECT_EQ(b.await_resume(), 52);
+    b = a;
+    EXPECT_EQ(b.await_resume(), 42);
+}
+
+TEST(SaveDynamicType, Move) {
+    dynamic::Awaiter<int, 4> a(AwaiterReturning<42>{});
+    dynamic::Awaiter<int, 4> b(AwaiterReturning<52>{});
+    EXPECT_EQ(a.await_resume(), 42);
+    EXPECT_EQ(b.await_resume(), 52);
+    b = std::move(a);
+    EXPECT_EQ(b.await_resume(), 42);
 }

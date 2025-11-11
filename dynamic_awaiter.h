@@ -79,6 +79,23 @@ class Awaiter {
         destroy(storage_);
     }
 
+    // Fallbacks for compile errors readability
+    template <typename A>
+        requires(!(AwaiterType<A, T> && internal::FitsStorage<A, MaxSize>) &&
+                 !std::is_same_v<std::remove_cvref_t<A>, Awaiter>)
+    Awaiter(A&&) {
+        static_assert(AwaiterType<A, T>);
+        static_assert(internal::FitsStorage<A, MaxSize>);
+    }
+
+    template <typename A>
+        requires(!(AwaiterType<A, T> && internal::FitsStorage<A, MaxSize>) &&
+                 !std::is_same_v<std::remove_cvref_t<A>, Awaiter>)
+    Awaiter& operator=(A&&) {
+        static_assert(AwaiterType<A, T>);
+        static_assert(internal::FitsStorage<A, MaxSize>);
+    }
+
     bool await_ready() {
         return ready(storage_);
     }

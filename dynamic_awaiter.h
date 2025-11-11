@@ -7,7 +7,7 @@ namespace dynamic {
 namespace internal {
 
 template <class R>
-concept await_suspend_result = std::same_as<R, void> || std::same_as<R, bool>;
+concept AwaitSuspendResult = std::same_as<R, void> || std::same_as<R, bool>;
 
 template <typename A, size_t MaxSize>
 concept FitsStorage = (sizeof(std::remove_cvref_t<A>) <= MaxSize) &&
@@ -19,7 +19,7 @@ template <class A, class T>
 concept AwaiterType = requires(std::remove_cvref_t<A> a, std::coroutine_handle<> h) {
                           { a.await_ready() } -> std::same_as<bool>;
                           { a.await_resume() } -> std::same_as<T>;
-                          { a.await_suspend(h) } -> internal::await_suspend_result;
+                          { a.await_suspend(h) } -> internal::AwaitSuspendResult;
                       };
 
 template <typename T, size_t MaxSize>

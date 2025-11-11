@@ -41,21 +41,42 @@ class Awaiter {
         return *this;
     }
 
+    Awaiter(const Awaiter& other) {
+        other.copy(storage_, other.storage_);
+        ready = other.ready;
+        suspend = other.suspend;
+        resume = other.resume;
+        destroy = other.destroy;
+        copy = other.copy;
+    }
+
+    Awaiter& operator=(const Awaiter& other) {
+        if (this != &other) {
+            destroy(storage_);
+            copy(storage_, other.storage_);
+        }
+        return *this;
+    }
+
+    Awaiter(Awaiter&& other) {
+        other.move(storage_, other.storage_);
+        ready = other.ready;
+        suspend = other.suspend;
+        resume = other.resume;
+        destroy = other.destroy;
+        copy = other.copy;
+    }
+
+    Awaiter& operator=(Awaiter&& other) {
+        if (this != &other) {
+            destroy(storage_);
+            move(storage_, other.storage_);
+        }
+        return *this;
+    }
+
     ~Awaiter() {
         destroy(storage_);
-    }
-
-    // Fallbacks for compile errors readability
-    template <typename A>
-    Awaiter(A&&) {
-        static_assert(AwaiterType<A, T>);
-        static_assert(internal::FitsStorage<A, MaxSize>);
-    }
-
-    template <typename A>
-    Awaiter& operator=(A&&) {
-        static_assert(AwaiterType<A, T>);
-        static_assert(internal::FitsStorage<A, MaxSize>);
     }
 
     bool await_ready() {
@@ -84,6 +105,8 @@ class Awaiter {
         };
         resume = [](void* storage) -> T { return static_cast<A*>(storage)->A::await_resume(); };
         destroy = [](void* storage) { static_cast<A*>(storage)->A::~A(); };
+        copy = [](void* dest, const void* src) { new (dest) A(*static_cast<const A*>(src)); };
+        move = [](void* dest, void* src) { new (dest) A(std::move(*static_cast<A*>(src))); };
     }
 
   private:
@@ -92,6 +115,8 @@ class Awaiter {
     bool (*suspend)(void*, std::coroutine_handle<>);
     T (*resume)(void*);
     void (*destroy)(void*);
+    void (*copy)(void*, const void*);
+    void (*move)(void*, void*);
 };
 
 }  // namespace dynamic

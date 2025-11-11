@@ -19,90 +19,132 @@ struct VoidSuspendAwaiter {
 
 struct BoolSuspendAwaiter {
     bool await_ready() {
-        return true;
-    }
-
-    bool await_suspend(std::coroutine_handle<>) {
         return false;
     }
 
+    bool await_suspend(std::coroutine_handle<>) {
+        return true;
+    }
+
     int await_resume() {
-        return 24;
+        return 42;
     }
 };
 
-struct TestAwaiter {
-    static int destruction_count;
-    int id;
+struct CounterAwaiter {
+    static int destructionCount;
+    static int copyCount;
+    static int moveCount;
 
-    TestAwaiter(int id) : id(id) {
+    static void resetCounts() {
+        destructionCount = 0;
+        copyCount = 0;
+        moveCount = 0;
     }
 
-    ~TestAwaiter() {
-        destruction_count++;
+    CounterAwaiter() = default;
+
+    CounterAwaiter(const CounterAwaiter&) {
+        copyCount++;
+    }
+
+    CounterAwaiter(CounterAwaiter&&) {
+        moveCount++;
+    }
+
+    ~CounterAwaiter() {
+        destructionCount++;
     }
 
     bool await_ready() {
-        return true;
+        return false;
     }
 
     void await_suspend(std::coroutine_handle<>) {
     }
 
     int await_resume() {
-        return id;
+        return 42;
     }
 };
 
-int TestAwaiter::destruction_count = 0;
+int CounterAwaiter::destructionCount = 0;
+int CounterAwaiter::copyCount = 0;
+int CounterAwaiter::moveCount = 0;
 
-TEST(AwaiterTest, ConstructWithVoidSuspend) {
-    auto awaiter = VoidSuspendAwaiter{};
-    dynamic::Awaiter<int, 64> a(awaiter);
+void checkAwaiter(dynamic::Awaiter<int, 1>& a) {
     auto handle = std::noop_coroutine();
     EXPECT_FALSE(a.await_ready());
     EXPECT_TRUE(a.await_suspend(handle));
     EXPECT_EQ(a.await_resume(), 42);
 }
 
-TEST(AwaiterTest, ConstructWithBoolSuspend) {
-    dynamic::Awaiter<int, 64> a(BoolSuspendAwaiter{});
-    auto handle = std::noop_coroutine();
-    EXPECT_TRUE(a.await_ready());
-    EXPECT_FALSE(a.await_suspend(handle));
-    EXPECT_EQ(a.await_resume(), 24);
+TEST(Constructor, ConstructWithVoidSuspend) {
+    dynamic::Awaiter<int, 1> a(VoidSuspendAwaiter{});
+    checkAwaiter(a);
 }
 
-TEST(AwaiterTest, AssignmentFromVoidToBool) {
-    dynamic::Awaiter<int, 64> a(VoidSuspendAwaiter{});
+TEST(Constructor, ConstructWithBoolSuspend) {
+    dynamic::Awaiter<int, 1> a(BoolSuspendAwaiter{});
+    checkAwaiter(a);
+}
+
+TEST(Assignment, AssignmentFromVoidToBool) {
+    dynamic::Awaiter<int, 1> a(VoidSuspendAwaiter{});
+    checkAwaiter(a);
     a = BoolSuspendAwaiter{};
-    auto handle = std::noop_coroutine();
-    EXPECT_TRUE(a.await_ready());
-    EXPECT_FALSE(a.await_suspend(handle));
-    EXPECT_EQ(a.await_resume(), 24);
+    checkAwaiter(a);
 }
 
-TEST(AwaiterTest, AssignmentFromBoolToVoid) {
-    dynamic::Awaiter<int, 64> a(BoolSuspendAwaiter{});
+TEST(Assignment, AssignmentFromBoolToVoid) {
+    dynamic::Awaiter<int, 1> a(BoolSuspendAwaiter{});
+    checkAwaiter(a);
     a = VoidSuspendAwaiter{};
-    auto handle = std::noop_coroutine();
-    EXPECT_FALSE(a.await_ready());
-    EXPECT_TRUE(a.await_suspend(handle));
-    EXPECT_EQ(a.await_resume(), 42);
+    checkAwaiter(a);
 }
 
-TEST(AwaiterTest, AssignmentDestructsOldAwaiter) {
-    TestAwaiter::destruction_count = 0;
-    auto awaiter = TestAwaiter{1};
-    dynamic::Awaiter<int, 64> a(std::move(awaiter));
-    auto awaiter_2 = TestAwaiter{2};
-    a = std::move(awaiter_2);
-    EXPECT_EQ(TestAwaiter::destruction_count, 1);
+TEST(Destructor, AssignmentDestructsOldAwaiter) {
+    CounterAwaiter::resetCounts();
+    auto awaiter_1 = CounterAwaiter();
+    dynamic::Awaiter<int, 1> a(awaiter_1);
+    auto awaiter_2 = CounterAwaiter();
+    a = awaiter_2;
+    EXPECT_EQ(CounterAwaiter::destructionCount, 1);
+    checkAwaiter(a);
 }
 
-TEST(AwaiterTest, DestructsAwaiterOnScopeExit) {
-    TestAwaiter::destruction_count = 0;
-    auto awaiter = TestAwaiter{1};
-    { dynamic::Awaiter<int, 64> a(std::move(awaiter)); }
-    EXPECT_EQ(TestAwaiter::destruction_count, 1);
+TEST(Destructor, DestructsAwaiterOnScopeExit) {
+    CounterAwaiter::resetCounts();
+    auto awaiter = CounterAwaiter();
+    {
+        dynamic::Awaiter<int, 1> a(awaiter);
+        checkAwaiter(a);
+    }
+    EXPECT_EQ(CounterAwaiter::destructionCount, 1);
+}
+
+TEST(IsCopyable, ConstructAndAssign) {
+    CounterAwaiter::resetCounts();
+    auto awaiter = CounterAwaiter();
+    dynamic::Awaiter<int, 1> a(awaiter);
+    checkAwaiter(a);
+    dynamic::Awaiter<int, 1> b(a);
+    a = b;
+    checkAwaiter(a);
+    checkAwaiter(b);
+    EXPECT_EQ(CounterAwaiter::copyCount, 3);
+    EXPECT_EQ(CounterAwaiter::moveCount, 0);
+}
+
+TEST(IsMoveable, ConstructAndAssign) {
+    CounterAwaiter::resetCounts();
+    auto awaiter = CounterAwaiter();
+    dynamic::Awaiter<int, 1> a(std::move(awaiter));
+    checkAwaiter(a);
+    dynamic::Awaiter<int, 1> b(std::move(a));
+    checkAwaiter(b);
+    a = std::move(b);
+    checkAwaiter(a);
+    EXPECT_EQ(CounterAwaiter::copyCount, 0);
+    EXPECT_EQ(CounterAwaiter::moveCount, 3);
 }

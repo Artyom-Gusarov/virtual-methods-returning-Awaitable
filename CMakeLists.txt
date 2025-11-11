@@ -5,7 +5,7 @@ project(DynamicAwaiter)
 # No Werror for google test and benchmark 
 set(CMAKE_CXX_FLAGS_TSAN "-O2 -Wall -Wextra -Wpedantic -fsanitize=thread -g")
 set(CMAKE_CXX_FLAGS_DEBUG "-O2 -Wall -Wextra -Wpedantic -fsanitize=address,undefined,leak -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -Wextra -Wpedantic")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -Wextra -Wpedantic -DNDEBUG")
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -29,7 +29,7 @@ FetchContent_MakeAvailable(googlebenchmark)
 
 set(CMAKE_CXX_FLAGS_TSAN "-O2 -Wall -Wextra -Wpedantic -Werror -fsanitize=thread -g")
 set(CMAKE_CXX_FLAGS_DEBUG "-O2 -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined,leak -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -Wextra -Wpedantic -Werror")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -Wextra -Wpedantic -Werror -DNDEBUG")
 
 
 

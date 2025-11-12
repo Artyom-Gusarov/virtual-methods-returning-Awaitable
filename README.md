@@ -4,7 +4,7 @@
 
 If we want frequently used function returning awaitable type we can make it coroutine or make it return hard-coded awaiter type, so it can be faster (no coroutine heap allocation and less calls).
 
-But if we want to have virtual methods returning awaitable type we can't use different awaiter types in derived classes, because return type must be the same in all overrides. So we need type-erased awaiter that can store different awaiter types on stack.
+But if we need virtual methods returning awaitable type we can't use different awaiter types in derived classes, because return type must be the same in all overrides. So we need type-erased awaiter that can store different awaiter types on stack.
 
 ## Solution
 
@@ -50,7 +50,9 @@ Both implementations are provided in [benchmark/dynamic_awaiter_impl.hpp](benchm
 
 ### Results
 
-Results on AMD 5500U / 16GB RAM in [benchmark/results](benchmark/results)
+Results on AMD 5500U / 16 GB RAM / GCC 13.1 in [benchmark/results](benchmark/results)
+
+`dynamic::Awaiter` faster at times than coroutine implementation, which uses simplified coroutines without many features that can make them slower.
 
 ## Unit tests
 

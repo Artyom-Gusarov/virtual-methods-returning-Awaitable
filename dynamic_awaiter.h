@@ -2,6 +2,7 @@
 
 #include <coroutine>
 #include <cstring>
+#include <stdexcept>
 
 namespace dynamic {
 
@@ -91,7 +92,7 @@ class Awaiter {
     template <AwaiterType<T> A>
         requires(internal::FitsStorage<A, MaxSize>)
     Awaiter& operator=(A&& awaiter) {
-        reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->destroy(storage_);
+        interface()->destroy(storage_);
         new (storage_) std::remove_cvref_t<A>(std::forward<A>(awaiter));
         assign_functions<std::remove_cvref_t<A>>();
         return *this;
@@ -99,34 +100,34 @@ class Awaiter {
 
     Awaiter(const Awaiter& other) {
         std::memcpy(interfaceStorage_, other.interfaceStorage_, sizeof(interfaceStorage_));
-        reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->copy(storage_, other.storage_);
+        interface()->copy(storage_, other.storage_);
     }
 
     Awaiter& operator=(const Awaiter& other) {
         if (this != &other) {
-            reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->destroy(storage_);
+            interface()->destroy(storage_);
             std::memcpy(interfaceStorage_, other.interfaceStorage_, sizeof(interfaceStorage_));
-            reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->copy(storage_, other.storage_);
+            interface()->copy(storage_, other.storage_);
         }
         return *this;
     }
 
     Awaiter(Awaiter&& other) {
         std::memcpy(interfaceStorage_, other.interfaceStorage_, sizeof(interfaceStorage_));
-        reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->move(storage_, other.storage_);
+        interface()->move(storage_, other.storage_);
     }
 
     Awaiter& operator=(Awaiter&& other) {
         if (this != &other) {
-            reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->destroy(storage_);
+            interface()->destroy(storage_);
             std::memcpy(interfaceStorage_, other.interfaceStorage_, sizeof(interfaceStorage_));
-            reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->move(storage_, other.storage_);
+            interface()->move(storage_, other.storage_);
         }
         return *this;
     }
 
     ~Awaiter() {
-        reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->destroy(storage_);
+        interface()->destroy(storage_);
     }
 
     // Fallbacks for compile errors readability
@@ -147,15 +148,15 @@ class Awaiter {
     }
 
     bool await_ready() {
-        return reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->await_ready(storage_);
+        return interface()->await_ready(storage_);
     }
 
     auto await_suspend(std::coroutine_handle<> handle) {
-        return reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->await_suspend(storage_, handle);
+        return interface()->await_suspend(storage_, handle);
     }
 
     T await_resume() {
-        return reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_)->await_resume(storage_);
+        return interface()->await_resume(storage_);
     }
 
   private:
@@ -164,7 +165,10 @@ class Awaiter {
         new (interfaceStorage_) internal::AwaiterInterfaceWrapper<T, A>();
     }
 
-  private:
+    internal::AwaiterInterface<T>* interface() {
+        return reinterpret_cast<internal::AwaiterInterface<T>*>(interfaceStorage_);
+    }
+
     alignas(alignof(std::max_align_t)) std::byte storage_[MaxSize];
     alignas(alignof(internal::AwaiterInterface<T>)) std::byte interfaceStorage_[sizeof(internal::AwaiterInterface<T>)];
 };
